@@ -1,0 +1,16 @@
+{
+  "dpolus": {
+    "id": 1,
+    "username": "dpolus",
+    "password_hash": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+    "email": "",
+    "full_name": "Diana Polus",
+    "created_at": "2026-01-14T18:08:32.782094",
+    "last_login": "2026-01-17T20:25:02.098760",
+    "profile": {
+      "currency": "USD",
+      "date_format": "YYYY-MM-DD",
+      "theme": "light"
+    }
+  }
+}

@@ -76,7 +76,7 @@ A comprehensive web-based application for tracking personal income and expenses 
 
 ```bash
 git clone <repository-url>
-cd expense_tracker
+cd Personal-Expense-Tracker
 ```
 
 ### Step 2: Create Virtual Environment (Recommended)
@@ -297,3 +297,4 @@ If you encounter any issues or have questions:
 ---
 
 **Made with ❤️ for better financial tracking**
+

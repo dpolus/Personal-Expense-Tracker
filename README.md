@@ -54,6 +54,13 @@ A comprehensive web-based application for tracking personal income and expenses 
 - Change password securely
 - Customize preferences (currency, date format, theme)
 
+### 💚 Financial Health Score (NEW!)
+- **AI-Powered Analysis**: Get personalized financial health scores using Together.ai
+- **Comprehensive Scoring**: 0-100 score based on savings rate, spending trends, and financial stability
+- **Personalized Recommendations**: Actionable advice tailored to your spending patterns
+- **Category Insights**: AI analysis of spending by category
+- **Strengths & Concerns**: Identify what you're doing well and areas for improvement
+
 ### ⚙️ Additional Features
 - **Data Export**: Export your data to CSV format
 - **All Transactions View**: Comprehensive list of all income and expenses
@@ -76,7 +83,7 @@ A comprehensive web-based application for tracking personal income and expenses 
 
 ```bash
 git clone <repository-url>
-cd Personal-Expense-Tracker
+cd expense_tracker
 ```
 
 ### Step 2: Create Virtual Environment (Recommended)
@@ -189,6 +196,11 @@ expense_tracker/
 - `pandas==2.1.3` - Data manipulation
 - `plotly==5.18.0` - Interactive charts
 - `openpyxl==3.1.2` - Excel file support
+- `requests==2.31.0` - HTTP library for API calls
+
+### Optional: Financial Health Score Setup
+
+To use the AI-powered Financial Health Score feature, you'll need a Together.ai API key. See [FINANCIAL_HEALTH_SETUP.md](FINANCIAL_HEALTH_SETUP.md) for detailed setup instructions.
 
 ## 🔒 Security
 
@@ -297,4 +309,3 @@ If you encounter any issues or have questions:
 ---
 
 **Made with ❤️ for better financial tracking**
-

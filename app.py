@@ -7,8 +7,10 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime, date
+import os
 from data_manager import DataManager
 from auth_manager import AuthManager
+from financial_health import FinancialHealthAnalyzer
 
 # Page configuration
 st.set_page_config(
@@ -97,6 +99,7 @@ def create_nav_bar():
         "➕ Add Transaction": "Add Income/Expense",
         "📅 Monthly Summary": "Monthly Summary",
         "📊 Yearly Summary": "Yearly Summary",
+        "💚 Financial Health": "Financial Health",
         "📋 All Transactions": "All Transactions",
         "👤 Profile": "Profile",
         "⚙️ Settings": "Settings"
@@ -244,6 +247,8 @@ def main():
         show_monthly_summary(data_manager)
     elif page == "Yearly Summary":
         show_yearly_summary(data_manager)
+    elif page == "Financial Health":
+        show_financial_health(data_manager)
     elif page == "All Transactions":
         show_all_transactions(data_manager)
     elif page == "Profile":
@@ -802,6 +807,318 @@ def show_settings(data_manager):
     
     Data is stored locally in user-specific files (`expense_data_<username>.json`).
     """)
+
+def show_financial_health(data_manager):
+    """Display Financial Health Score with AI-powered analysis"""
+    st.markdown("### 💚 Financial Health Score")
+    st.markdown("AI-powered analysis of your financial situation with personalized recommendations")
+    st.markdown("")
+    
+    # Check if API key is set
+    api_key = None
+    # Try to get from Streamlit secrets (if available)
+    # Note: Accessing st.secrets will trigger file loading, so we catch any errors
+    try:
+        api_key = st.secrets.get("TOGETHER_API_KEY", None)
+    except (FileNotFoundError, AttributeError, KeyError, Exception):
+        # Secrets file doesn't exist, key not found, or any other error - that's okay
+        # We'll fall back to environment variable
+        pass
+    
+    # Fallback to environment variable
+    if not api_key:
+        api_key = os.getenv("TOGETHER_API_KEY", None)
+    
+    if not api_key:
+        st.warning("⚠️ **Together.ai API Key Required**")
+        st.info("""
+        To use the Financial Health Score feature, you need to set your Together.ai API key.
+        
+        **Option 1: Environment Variable (Recommended)**
+        ```bash
+        # Windows PowerShell
+        $env:TOGETHER_API_KEY="your-api-key-here"
+        
+        # Windows CMD
+        set TOGETHER_API_KEY=your-api-key-here
+        
+        # macOS/Linux
+        export TOGETHER_API_KEY=your-api-key-here
+        ```
+        
+        **Option 2: Streamlit Secrets**
+        Create a `.streamlit/secrets.toml` file with:
+        ```toml
+        TOGETHER_API_KEY = "your-api-key-here"
+        ```
+        
+        Get your API key from: https://api.together.xyz/
+        """)
+        
+        # Show fallback metrics without AI
+        st.markdown("---")
+        st.subheader("📊 Basic Financial Metrics")
+        show_basic_metrics(data_manager)
+        return
+    
+    # Model selection - Using serverless models that don't require dedicated endpoints
+    st.markdown("#### ⚙️ AI Model Settings")
+    available_models = [
+        "meta-llama/Llama-2-7b-chat-hf",  # Serverless - good for free tier
+        "meta-llama/Llama-2-70b-chat-hf",  # Serverless
+        "mistralai/Mistral-7B-Instruct-v0.1",  # Serverless
+        "NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO",  # Serverless
+        "meta-llama/Llama-3-70b-chat-hf",  # May require dedicated endpoint
+        "mistralai/Mixtral-8x7B-Instruct-v0.1",  # May require dedicated endpoint
+    ]
+    
+    selected_model = st.selectbox(
+        "Select AI Model (Serverless models recommended)",
+        available_models,
+        index=0,
+        help="Start with 'meta-llama/Llama-2-7b-chat-hf' for free tier. If you get a 400 error about 'non-serverless model', try a different serverless model."
+    )
+    
+    # Initialize analyzer with selected model
+    analyzer = FinancialHealthAnalyzer(api_key=api_key)
+    analyzer.model = selected_model
+    
+    # Button to generate/refresh score
+    col1, col2, col3 = st.columns([2, 1, 1])
+    with col1:
+        st.info(f"💡 Click the button below to generate your AI-powered financial health analysis using {selected_model}")
+    with col2:
+        if st.button("🔄 Refresh Analysis", use_container_width=True):
+            if 'health_score_data' in st.session_state:
+                del st.session_state.health_score_data
+    
+    # Generate or retrieve health score
+    if 'health_score_data' not in st.session_state:
+        with st.spinner("🤖 Analyzing your financial data with AI... This may take a few seconds."):
+            try:
+                health_data = analyzer.generate_health_score(data_manager)
+                st.session_state.health_score_data = health_data
+            except Exception as e:
+                error_msg = str(e)
+                st.error(f"❌ Error generating health score: {error_msg}")
+                
+                # Provide troubleshooting help
+                if "400" in error_msg or "Bad Request" in error_msg:
+                    if "non-serverless" in error_msg.lower() or "dedicated endpoint" in error_msg.lower():
+                        st.warning("""
+                        **400 Error: Model Requires Dedicated Endpoint**
+                        
+                        The selected model requires a dedicated endpoint and isn't available as serverless.
+                        
+                        **Solution:**
+                        1. **Select a serverless model** - Try "meta-llama/Llama-2-7b-chat-hf" (recommended for free tier)
+                        2. **Or create a dedicated endpoint** - Visit the model page to set up a dedicated endpoint
+                        3. **Check available serverless models** - Visit https://together.ai/models and filter for serverless models
+                        
+                        The app will use fallback calculations instead.
+                        """)
+                    else:
+                        st.warning("""
+                        **400 Bad Request Error - Troubleshooting:**
+                        
+                        1. **Try a different model** - The selected model might not be available on your Together.ai plan
+                        2. **Check your API key** - Verify your API key is valid at https://api.together.xyz/
+                        3. **Check model availability** - Visit https://together.ai/models to see available models
+                        4. **API credits** - Ensure you have sufficient credits in your Together.ai account
+                        
+                        The app will use fallback calculations instead.
+                        """)
+                elif "401" in error_msg or "Unauthorized" in error_msg:
+                    st.warning("""
+                    **401 Unauthorized Error:**
+                    
+                    Your API key might be invalid or expired. Please:
+                    1. Check your API key at https://api.together.xyz/
+                    2. Regenerate your API key if needed
+                    3. Make sure the key is set correctly in your environment variable
+                    """)
+                elif "429" in error_msg or "rate limit" in error_msg.lower():
+                    st.warning("""
+                    **Rate Limit Error:**
+                    
+                    You've exceeded the API rate limit. Please wait a moment and try again.
+                    """)
+                
+                st.info("Showing basic metrics instead.")
+                show_basic_metrics(data_manager)
+                return
+    else:
+        health_data = st.session_state.health_score_data
+    
+    # Display Health Score
+    st.markdown("---")
+    score = health_data.get("score", 70)
+    
+    # Score visualization
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        # Determine score color
+        if score >= 80:
+            score_color = "🟢"
+            score_label = "Excellent"
+            score_color_hex = "#28a745"
+        elif score >= 60:
+            score_color = "🟡"
+            score_label = "Good"
+            score_color_hex = "#ffc107"
+        elif score >= 40:
+            score_color = "🟠"
+            score_label = "Fair"
+            score_color_hex = "#fd7e14"
+        else:
+            score_color = "🔴"
+            score_label = "Needs Improvement"
+            score_color_hex = "#dc3545"
+        
+        # Display score with visual
+        st.markdown(f"""
+        <div style="text-align: center; padding: 2rem; background: linear-gradient(135deg, {score_color_hex}15 0%, {score_color_hex}05 100%); border-radius: 1rem; border: 2px solid {score_color_hex}40;">
+            <h1 style="font-size: 4rem; margin: 0; color: {score_color_hex};">{score}</h1>
+            <h3 style="margin: 0.5rem 0; color: {score_color_hex};">{score_color} {score_label}</h3>
+            <p style="color: #666; margin: 0;">Financial Health Score</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        if "score_explanation" in health_data:
+            st.markdown(f"*{health_data['score_explanation']}*")
+    
+    st.markdown("")
+    
+    # Analysis Section
+    if "analysis" in health_data:
+        st.markdown("### 📝 Financial Analysis")
+        st.markdown(health_data["analysis"])
+        st.markdown("")
+    
+    # Strengths and Concerns
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if "strengths" in health_data and health_data["strengths"]:
+            st.markdown("### ✅ Strengths")
+            for strength in health_data["strengths"]:
+                st.markdown(f"• {strength}")
+    
+    with col2:
+        if "concerns" in health_data and health_data["concerns"]:
+            st.markdown("### ⚠️ Areas for Improvement")
+            for concern in health_data["concerns"]:
+                st.markdown(f"• {concern}")
+    
+    st.markdown("---")
+    
+    # Recommendations
+    if "recommendations" in health_data and health_data["recommendations"]:
+        st.markdown("### 💡 Personalized Recommendations")
+        
+        for idx, rec in enumerate(health_data["recommendations"], 1):
+            priority = rec.get("priority", "medium").lower()
+            priority_color = {
+                "high": "🔴",
+                "medium": "🟡",
+                "low": "🟢"
+            }.get(priority, "🟡")
+            
+            with st.expander(f"{priority_color} **{rec.get('title', 'Recommendation')}** (Priority: {priority.title()})"):
+                st.markdown(rec.get("description", ""))
+    
+    st.markdown("---")
+    
+    # Category Insights
+    if "category_insights" in health_data and health_data["category_insights"]:
+        st.markdown("### 📊 Category Insights")
+        for category, insight in health_data["category_insights"].items():
+            st.markdown(f"**{category}**: {insight}")
+        st.markdown("---")
+    
+    # Key Metrics
+    st.markdown("### 📈 Key Financial Metrics")
+    metrics = health_data.get("metrics", {})
+    
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        savings_rate = metrics.get("savings_rate", 0)
+        st.metric("Savings Rate", f"{savings_rate:.1f}%")
+    
+    with col2:
+        avg_monthly_net = metrics.get("avg_monthly_income", 0) - metrics.get("avg_monthly_expenses", 0)
+        st.metric("Avg Monthly Net", format_currency(avg_monthly_net))
+    
+    with col3:
+        spending_trend = metrics.get("spending_trend", "stable")
+        trend_icon = {
+            "increasing": "📈",
+            "decreasing": "📉",
+            "stable": "➡️"
+        }.get(spending_trend, "➡️")
+        st.metric("Spending Trend", f"{trend_icon} {spending_trend.title()}")
+    
+    with col4:
+        income_consistency = metrics.get("income_consistency", "stable")
+        consistency_icon = {
+            "consistent": "✅",
+            "stable": "➡️",
+            "variable": "⚠️"
+        }.get(income_consistency, "➡️")
+        st.metric("Income Consistency", f"{consistency_icon} {income_consistency.title()}")
+    
+    # Expenses by Category Chart
+    if metrics.get("expenses_by_category"):
+        st.markdown("---")
+        st.markdown("### 💰 Top Spending Categories (Last 3 Months)")
+        
+        categories = list(metrics["expenses_by_category"].keys())
+        amounts = list(metrics["expenses_by_category"].values())
+        
+        # Sort by amount
+        sorted_data = sorted(zip(categories, amounts), key=lambda x: x[1], reverse=True)
+        top_categories = [x[0] for x in sorted_data[:8]]
+        top_amounts = [x[1] for x in sorted_data[:8]]
+        
+        fig = px.bar(
+            x=top_amounts,
+            y=top_categories,
+            orientation='h',
+            title="Top Expense Categories",
+            labels={"x": "Amount ($)", "y": "Category"},
+            color=top_amounts,
+            color_continuous_scale="Reds"
+        )
+        fig.update_layout(showlegend=False, height=400)
+        st.plotly_chart(fig, use_container_width=True)
+    
+    # Generated timestamp
+    if "generated_at" in health_data:
+        generated_time = datetime.fromisoformat(health_data["generated_at"]).strftime("%Y-%m-%d %H:%M:%S")
+        st.caption(f"Analysis generated on: {generated_time}")
+
+def show_basic_metrics(data_manager):
+    """Show basic financial metrics without AI analysis"""
+    income_df = data_manager.get_income_df()
+    expenses_df = data_manager.get_expenses_df()
+    
+    current_month = datetime.now().month
+    current_year = datetime.now().year
+    
+    month_summary = data_manager.get_monthly_summary(current_year, current_month)
+    
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.metric("Monthly Income", format_currency(month_summary["total_income"]))
+    with col2:
+        st.metric("Monthly Expenses", format_currency(month_summary["total_expenses"]))
+    with col3:
+        st.metric("Monthly Net", format_currency(month_summary["net"]))
+    with col4:
+        savings_rate = ((month_summary["total_income"] - month_summary["total_expenses"]) / month_summary["total_income"] * 100) if month_summary["total_income"] > 0 else 0
+        st.metric("Savings Rate", f"{savings_rate:.1f}%")
 
 if __name__ == "__main__":
     main()

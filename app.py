@@ -224,6 +224,9 @@ def main():
             st.session_state.username = None
             st.session_state.data_manager = None
             st.session_state.current_page = "Add Income/Expense"
+            # Clear financial health data to prevent data leakage between users
+            if 'health_score_data' in st.session_state:
+                del st.session_state.health_score_data
             st.rerun()
     
     st.markdown(f"**Logged in as:** {username}")
@@ -1001,14 +1004,40 @@ def show_financial_health(data_manager):
     with col1:
         if "strengths" in health_data and health_data["strengths"]:
             st.markdown("### ✅ Strengths")
-            for strength in health_data["strengths"]:
-                st.markdown(f"• {strength}")
+            strengths = health_data["strengths"]
+            # Handle both list and single string cases
+            if isinstance(strengths, list):
+                for strength in strengths:
+                    # Handle both string and dict cases
+                    if isinstance(strength, str):
+                        st.markdown(f"• {strength}")
+                    elif isinstance(strength, dict):
+                        st.markdown(f"• {strength.get('text', strength.get('description', str(strength)))}")
+                    else:
+                        st.markdown(f"• {str(strength)}")
+            elif isinstance(strengths, str):
+                st.markdown(f"• {strengths}")
+            else:
+                st.markdown(f"• {str(strengths)}")
     
     with col2:
         if "concerns" in health_data and health_data["concerns"]:
             st.markdown("### ⚠️ Areas for Improvement")
-            for concern in health_data["concerns"]:
-                st.markdown(f"• {concern}")
+            concerns = health_data["concerns"]
+            # Handle both list and single string cases
+            if isinstance(concerns, list):
+                for concern in concerns:
+                    # Handle both string and dict cases
+                    if isinstance(concern, str):
+                        st.markdown(f"• {concern}")
+                    elif isinstance(concern, dict):
+                        st.markdown(f"• {concern.get('text', concern.get('description', str(concern)))}")
+                    else:
+                        st.markdown(f"• {str(concern)}")
+            elif isinstance(concerns, str):
+                st.markdown(f"• {concerns}")
+            else:
+                st.markdown(f"• {str(concerns)}")
     
     st.markdown("---")
     
@@ -1016,24 +1045,93 @@ def show_financial_health(data_manager):
     if "recommendations" in health_data and health_data["recommendations"]:
         st.markdown("### 💡 Personalized Recommendations")
         
-        for idx, rec in enumerate(health_data["recommendations"], 1):
-            priority = rec.get("priority", "medium").lower()
+        recommendations = health_data["recommendations"]
+        
+        # Handle different recommendation formats
+        if isinstance(recommendations, str):
+            # Single string recommendation
+            with st.expander("🟡 **Recommendation** (Priority: Medium)"):
+                st.markdown(recommendations)
+        elif isinstance(recommendations, list):
+            # List of recommendations
+            for idx, rec in enumerate(recommendations, 1):
+                if isinstance(rec, dict):
+                    # Expected format: dict with priority, title, description
+                    priority = rec.get("priority", "medium")
+                    if isinstance(priority, str):
+                        priority = priority.lower()
+                    else:
+                        priority = "medium"
+                    
+                    priority_color = {
+                        "high": "🔴",
+                        "medium": "🟡",
+                        "low": "🟢"
+                    }.get(priority, "🟡")
+                    
+                    title = rec.get("title", rec.get("name", f"Recommendation {idx}"))
+                    description = rec.get("description", rec.get("text", rec.get("detail", "")))
+                    
+                    with st.expander(f"{priority_color} **{title}** (Priority: {priority.title()})"):
+                        st.markdown(description if description else "No description provided.")
+                elif isinstance(rec, str):
+                    # String recommendation - treat as medium priority
+                    with st.expander(f"🟡 **Recommendation {idx}** (Priority: Medium)"):
+                        st.markdown(rec)
+                else:
+                    # Unknown format - convert to string
+                    with st.expander(f"🟡 **Recommendation {idx}** (Priority: Medium)"):
+                        st.markdown(str(rec))
+        elif isinstance(recommendations, dict):
+            # Single dict recommendation
+            priority = recommendations.get("priority", "medium")
+            if isinstance(priority, str):
+                priority = priority.lower()
+            else:
+                priority = "medium"
+            
             priority_color = {
                 "high": "🔴",
                 "medium": "🟡",
                 "low": "🟢"
             }.get(priority, "🟡")
             
-            with st.expander(f"{priority_color} **{rec.get('title', 'Recommendation')}** (Priority: {priority.title()})"):
-                st.markdown(rec.get("description", ""))
+            title = recommendations.get("title", recommendations.get("name", "Recommendation"))
+            description = recommendations.get("description", recommendations.get("text", recommendations.get("detail", "")))
+            
+            with st.expander(f"{priority_color} **{title}** (Priority: {priority.title()})"):
+                st.markdown(description if description else "No description provided.")
+        else:
+            # Unknown format - display as-is
+            st.info(f"Recommendations: {str(recommendations)}")
     
     st.markdown("---")
     
     # Category Insights
     if "category_insights" in health_data and health_data["category_insights"]:
         st.markdown("### 📊 Category Insights")
-        for category, insight in health_data["category_insights"].items():
-            st.markdown(f"**{category}**: {insight}")
+        category_insights = health_data["category_insights"]
+        
+        # Handle both dict and other formats
+        if isinstance(category_insights, dict):
+            for category, insight in category_insights.items():
+                if isinstance(insight, str):
+                    st.markdown(f"**{category}**: {insight}")
+                else:
+                    st.markdown(f"**{category}**: {str(insight)}")
+        elif isinstance(category_insights, list):
+            # List format - display as list
+            for insight in category_insights:
+                if isinstance(insight, dict):
+                    category = insight.get("category", insight.get("name", "Unknown"))
+                    text = insight.get("insight", insight.get("text", insight.get("description", str(insight))))
+                    st.markdown(f"**{category}**: {text}")
+                else:
+                    st.markdown(f"• {str(insight)}")
+        elif isinstance(category_insights, str):
+            st.markdown(category_insights)
+        else:
+            st.markdown(str(category_insights))
         st.markdown("---")
     
     # Key Metrics
@@ -1100,9 +1198,6 @@ def show_financial_health(data_manager):
 
 def show_basic_metrics(data_manager):
     """Show basic financial metrics without AI analysis"""
-    income_df = data_manager.get_income_df()
-    expenses_df = data_manager.get_expenses_df()
-    
     current_month = datetime.now().month
     current_year = datetime.now().year
     

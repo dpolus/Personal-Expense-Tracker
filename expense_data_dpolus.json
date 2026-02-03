@@ -1,0 +1,94 @@
+{
+  "income": [
+    {
+      "id": 1,
+      "amount": 2500.0,
+      "date": "2026-01-01",
+      "source": "Salary",
+      "description": "",
+      "timestamp": "2026-01-30T16:02:17.949841"
+    },
+    {
+      "id": 2,
+      "amount": 2500.0,
+      "date": "2026-02-01",
+      "source": "Salary",
+      "description": "",
+      "timestamp": "2026-01-30T16:03:15.492547"
+    },
+    {
+      "id": 3,
+      "amount": 1200.0,
+      "date": "2026-01-02",
+      "source": "Salary",
+      "description": "",
+      "timestamp": "2026-02-02T21:09:49.983003"
+    },
+    {
+      "id": 4,
+      "amount": 1200.0,
+      "date": "2026-01-16",
+      "source": "Salary",
+      "description": "",
+      "timestamp": "2026-02-02T21:10:02.552196"
+    },
+    {
+      "id": 5,
+      "amount": 1200.0,
+      "date": "2026-01-30",
+      "source": "Salary",
+      "description": "",
+      "timestamp": "2026-02-02T21:10:19.777055"
+    }
+  ],
+  "expenses": [
+    {
+      "id": 1,
+      "amount": 1200.0,
+      "date": "2026-01-01",
+      "category": "Bills & Utilities",
+      "description": "Rent",
+      "timestamp": "2026-01-30T16:02:28.702573"
+    },
+    {
+      "id": 2,
+      "amount": 250.0,
+      "date": "2026-01-09",
+      "category": "Shopping",
+      "description": "Clothes",
+      "timestamp": "2026-01-30T16:02:45.566038"
+    },
+    {
+      "id": 3,
+      "amount": 200.0,
+      "date": "2026-01-30",
+      "category": "Food & Dining",
+      "description": "Groceries",
+      "timestamp": "2026-01-30T16:02:53.074260"
+    },
+    {
+      "id": 4,
+      "amount": 1200.0,
+      "date": "2026-02-01",
+      "category": "Bills & Utilities",
+      "description": "Rent",
+      "timestamp": "2026-01-30T16:03:26.606325"
+    },
+    {
+      "id": 5,
+      "amount": 950.0,
+      "date": "2026-02-01",
+      "category": "Bills & Utilities",
+      "description": "Rent",
+      "timestamp": "2026-02-02T21:10:34.332272"
+    },
+    {
+      "id": 6,
+      "amount": 25.0,
+      "date": "2026-01-10",
+      "category": "Food & Dining",
+      "description": "Ramen",
+      "timestamp": "2026-02-02T21:10:52.569511"
+    }
+  ]
+}

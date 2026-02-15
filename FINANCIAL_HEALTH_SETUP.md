@@ -2,6 +2,8 @@
 
 The Financial Health Score feature uses Together.ai to provide AI-powered analysis of your financial situation.
 
+**Important:** This app uses **serverless models only** - no dedicated endpoints are required. All models work with free tier accounts (Build Tier 1) without needing to create dedicated endpoints.
+
 ## Prerequisites
 
 1. **Together.ai API Key**: Get your free API key from [https://api.together.xyz/](https://api.together.xyz/)
@@ -81,22 +83,24 @@ TOGETHER_API_KEY = "your-api-key-here"
 ### 400 Bad Request Error
 This is the most common error. It usually means:
 
-1. **"Non-serverless model" error** - The model requires a dedicated endpoint
-   - **Solution**: Select a serverless model from the dropdown:
-     - Start with **"meta-llama/Llama-2-7b-chat-hf"** (recommended for free tier)
-     - Or try "meta-llama/Llama-2-70b-chat-hf" or "mistralai/Mistral-7B-Instruct-v0.1"
-   - Serverless models work with free/starter accounts without needing dedicated endpoints
-   - Check serverless models at: https://together.ai/models (filter for serverless)
+1. **"Non-serverless model" error** - The model requires a dedicated endpoint (shouldn't happen with current model list)
+   - **Solution**: All models in the dropdown are serverless and work with Build Tier 1 (free tier)
+   - Start with **"meta-llama/Llama-3.3-70B-Instruct-Turbo"** (Together.ai's default serverless model)
+   - Or try **"meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo"** (smaller, faster)
+   - If you see this error, try selecting a different serverless model from the dropdown
+   - The app only shows serverless models that don't require dedicated endpoints
 
 2. **Model not available** - The selected model might not be available on your Together.ai plan
-   - **Solution**: Try selecting a different model from the dropdown
-   - Check available models at: https://together.ai/models
+   - **Solution**: Try selecting a different serverless model from the dropdown
+   - All listed models are serverless and should work with free tier accounts
+   - Check available serverless models at: https://together.ai/models (filter for serverless)
 
 3. **Invalid API key** - Your API key might be incorrect
    - **Solution**: Verify your key at https://api.together.xyz/
 
 4. **Insufficient credits** - Your account might not have enough credits
    - **Solution**: Check your Together.ai account balance
+   - Free tier accounts have limited credits - check your usage at https://api.together.xyz/
 
 ### 401 Unauthorized Error
 - Your API key is invalid or expired

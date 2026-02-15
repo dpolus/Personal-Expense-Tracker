@@ -6,7 +6,7 @@ import os
 import json
 import requests
 from typing import Dict, Optional, List
-from datetime import datetime, timedelta
+from datetime import datetime
 
 
 class FinancialHealthAnalyzer:
@@ -21,8 +21,9 @@ class FinancialHealthAnalyzer:
         """
         self.api_key = api_key or os.getenv("TOGETHER_API_KEY")
         self.api_url = "https://api.together.xyz/v1/chat/completions"
-        # Default to a serverless model that works with free tier accounts
-        self.model = "meta-llama/Llama-2-7b-chat-hf"  # Serverless model, can be changed
+        # Default to a serverless model that works with free tier (Build Tier 1) without dedicated endpoints
+        # Using Llama 3.3 70B Turbo - Together.ai's default serverless chat model
+        self.model = "meta-llama/Llama-3.3-70B-Instruct-Turbo"  # Serverless model - no dedicated endpoint required
         
     def _call_together_ai(self, prompt: str, system_prompt: str = None) -> str:
         """
@@ -493,7 +494,9 @@ Focus on providing actionable, personalized advice based on the actual spending 
             })
         
         top_category = max(metrics.get("expenses_by_category", {}).items(), key=lambda x: x[1], default=None)
-        if top_category and top_category[1] > metrics.get("avg_monthly_expenses", 0) * 0.3:
+        # Compare 3-month category total against 30% of 3-month total expenses
+        # avg_monthly_expenses * 3 * 0.3 = avg_monthly_expenses * 0.9
+        if top_category and top_category[1] > metrics.get("avg_monthly_expenses", 0) * 0.9:
             recommendations.append({
                 "priority": "medium",
                 "title": f"Review {top_category[0]} Spending",
